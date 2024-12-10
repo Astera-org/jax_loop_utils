@@ -2,26 +2,29 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Optional, OrderedDict, TypeVar
 
+import jax
+
 from .interface import Array, MetricWriter, Scalar
 
-K = TypeVar("K")
 V = TypeVar("V")
 
 
-class _StrictlyOrderedDict(OrderedDict[K, V]):
+class _StepDict(OrderedDict[int, V]):
     def __setitem__(self, key, value):
         if self:
             last_key = next(reversed(self))
-            assert key > last_key, "Key must be greater than the last inserted key."
+            assert key > last_key, "Step must be greater than the last inserted step."
         super().__setitem__(key, value)
 
 
+@jax.tree_util.register_dataclass
 @dataclass
 class MemoryWriterAudioEntry:
     audios: Mapping[str, Array]
     sample_rate: int
 
 
+@jax.tree_util.register_dataclass
 @dataclass
 class MemoryWriterHistogramEntry:
     arrays: Mapping[str, Array]
@@ -38,12 +41,12 @@ class MemoryWriter(MetricWriter):
     hparams: Optional[Mapping[str, object]]
 
     def __init__(self):
-        self.scalars = _StrictlyOrderedDict()
-        self.images = _StrictlyOrderedDict()
-        self.videos = _StrictlyOrderedDict()
-        self.audios = _StrictlyOrderedDict()
-        self.texts = _StrictlyOrderedDict()
-        self.histograms = _StrictlyOrderedDict()
+        self.scalars = _StepDict()
+        self.images = _StepDict()
+        self.videos = _StepDict()
+        self.audios = _StepDict()
+        self.texts = _StepDict()
+        self.histograms = _StepDict()
         self.hparams = None
 
     def write_scalars(self, step: int, scalars: Mapping[str, Scalar]):

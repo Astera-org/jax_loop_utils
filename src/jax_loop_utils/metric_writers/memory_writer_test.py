@@ -1,22 +1,13 @@
-# Copyright 2024 The CLU Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Tests for the MemoryWriter."""
-
+import chex
+import jax
+import jax.numpy as jnp
 import pytest
 
-from jax_loop_utils.metric_writers.memory_writer import MemoryWriter
+from .memory_writer import (
+    MemoryWriter,
+    MemoryWriterAudioEntry,
+    MemoryWriterHistogramEntry,
+)
 
 
 def test_write_scalars():
@@ -32,9 +23,79 @@ def test_write_scalars_fails_when_using_same_step():
     writer = MemoryWriter()
     writer.write_scalars(0, {})
     with pytest.raises(
-        AssertionError, match=r"Key must be greater than the last inserted key\."
+        AssertionError, match=r"Step must be greater than the last inserted step\."
     ):
         writer.write_scalars(0, {})
+
+
+def _image() -> jax.Array:
+    return jnp.zeros((2, 2, 3), dtype=jnp.uint8)
+
+
+def _video() -> jax.Array:
+    return jnp.zeros((1, 5, 2, 2, 3), dtype=jnp.uint8)
+
+
+def _audio() -> jax.Array:
+    return jnp.zeros((8, 1), dtype=jnp.float16)
+
+
+def _histogram() -> jax.Array:
+    return jnp.zeros((10, 1))
+
+
+def test_write_images():
+    writer = MemoryWriter()
+    assert writer.images == {}
+    writer.write_images(1, {"a": _image()})
+    chex.assert_trees_all_equal(dict(writer.images), {1: {"a": _image()}}, strict=True)
+
+
+def test_write_videos():
+    writer = MemoryWriter()
+    assert writer.videos == {}
+    writer.write_videos(2, {"a": _video()})
+    chex.assert_trees_all_equal(dict(writer.videos), {2: {"a": _video()}}, strict=True)
+
+
+def test_write_audios():
+    writer = MemoryWriter()
+    assert writer.audios == {}
+    writer.write_audios(3, {"a": _audio()}, sample_rate=44100)
+    chex.assert_trees_all_equal(
+        dict(writer.audios),
+        {3: MemoryWriterAudioEntry(audios={"a": _audio()}, sample_rate=44100)},
+        strict=True,
+    )
+
+
+def test_write_texts():
+    writer = MemoryWriter()
+    assert writer.texts == {}
+    writer.write_texts(4, {"a": "text"})
+    assert writer.texts == {4: {"a": "text"}}
+
+
+def test_write_histograms():
+    writer = MemoryWriter()
+    assert writer.histograms == {}
+    writer.write_histograms(5, {"a": _histogram()})
+    chex.assert_trees_all_equal(
+        dict(writer.histograms),
+        {5: MemoryWriterHistogramEntry(arrays={"a": _histogram()}, num_buckets=None)},
+        strict=True,
+    )
+    writer.write_histograms(6, {"b": _histogram()}, num_buckets={"b": 10})
+    chex.assert_trees_all_equal(
+        dict(writer.histograms),
+        {
+            5: MemoryWriterHistogramEntry(arrays={"a": _histogram()}, num_buckets=None),
+            6: MemoryWriterHistogramEntry(
+                arrays={"b": _histogram()}, num_buckets={"b": 10}
+            ),
+        },
+        strict=True,
+    )
 
 
 def test_write_hparams():
