@@ -1,3 +1,3 @@
-from .metric_writer import MetricWriter
+from .metric_writer import MlflowMetricWriter
 
-__all__ = ["MetricWriter"]
+__all__ = ["MlflowMetricWriter"]

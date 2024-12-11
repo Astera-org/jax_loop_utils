@@ -6,7 +6,7 @@ import mlflow.entities
 import numpy as np
 from absl.testing import absltest
 
-from jax_loop_utils.metric_writers.mlflow import MetricWriter
+from jax_loop_utils.metric_writers.mlflow import MlflowMetricWriter
 
 
 def _get_runs(tracking_uri: str, experiment_name: str) -> list[mlflow.entities.Run]:
@@ -16,12 +16,12 @@ def _get_runs(tracking_uri: str, experiment_name: str) -> list[mlflow.entities.R
     return client.search_runs([experiment.experiment_id])
 
 
-class MetricWriterTest(absltest.TestCase):
+class MlflowMetricWriterTest(absltest.TestCase):
     def test_write_scalars(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             seq_of_scalars = (
                 {"a": 3, "b": 0.15},
                 {"a": 5, "b": 0.007},
@@ -45,7 +45,7 @@ class MetricWriterTest(absltest.TestCase):
             run = runs[0]
             self.assertEqual(run.info.status, "FINISHED")
             # check we can create a new writer with an existing experiment
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             writer.write_scalars(0, {"a": 1, "b": 2})
             writer.flush()
             writer.close()
@@ -57,7 +57,7 @@ class MetricWriterTest(absltest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             writer.write_images(0, {"test_image": np.zeros((3, 3, 3), dtype=np.uint8)})
             writer.close()
 
@@ -79,7 +79,7 @@ class MetricWriterTest(absltest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             test_text = "Hello world"
             writer.write_texts(0, {"test_text": test_text})
             writer.close()
@@ -102,7 +102,7 @@ class MetricWriterTest(absltest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             test_params = {"learning_rate": 0.001, "batch_size": 32, "epochs": 100}
             writer.write_hparams(test_params)
             writer.close()
@@ -118,7 +118,7 @@ class MetricWriterTest(absltest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
-            writer = MetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             writer.write_videos(0, {"video": np.zeros((4, 28, 28, 3))})
             writer.write_audios(0, {"audio": np.zeros((2, 1000))}, sample_rate=16000)
             writer.write_histograms(

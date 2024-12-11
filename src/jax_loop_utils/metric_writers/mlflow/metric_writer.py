@@ -19,7 +19,7 @@ from jax_loop_utils.metric_writers.interface import (
 )
 
 
-class MetricWriter(MetricWriterInterface):
+class MlflowMetricWriter(MetricWriterInterface):
     """MLflow implementation of MetricWriter."""
 
     def __init__(self, experiment_name: str, tracking_uri: str | None = None):
@@ -46,10 +46,11 @@ class MetricWriter(MetricWriterInterface):
 
     def write_scalars(self, step: int, scalars: Mapping[str, Scalar]):
         """Write scalar metrics to MLflow."""
-        metrics_list: list[mlflow.entities.Metric] = []
         timestamp = int(time() * 1000)
-        for k, v in scalars.items():
-            metrics_list.append(mlflow.entities.Metric(k, float(v), timestamp, step))
+        metrics_list = [
+            mlflow.entities.Metric(k, float(v), timestamp, step)
+            for k, v in scalars.items()
+        ]
         self._client.log_batch(self._run_id, metrics=metrics_list, synchronous=False)
 
     def write_images(self, step: int, images: Mapping[str, Array]):
