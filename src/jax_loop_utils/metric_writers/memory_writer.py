@@ -13,7 +13,8 @@ class _StepDict(OrderedDict[int, V]):
     def __setitem__(self, key, value):
         if self:
             last_key = next(reversed(self))
-            assert key > last_key, "Step must be greater than the last inserted step."
+            if not key > last_key:
+                raise ValueError("Step must be greater than the last inserted step.")
         super().__setitem__(key, value)
 
 

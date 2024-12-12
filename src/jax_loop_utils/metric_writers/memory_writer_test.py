@@ -23,7 +23,7 @@ def test_write_scalars_fails_when_using_same_step():
     writer = MemoryWriter()
     writer.write_scalars(0, {})
     with pytest.raises(
-        AssertionError, match=r"Step must be greater than the last inserted step\."
+        ValueError, match=r"Step must be greater than the last inserted step\."
     ):
         writer.write_scalars(0, {})
 
