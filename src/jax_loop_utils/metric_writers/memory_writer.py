@@ -80,9 +80,3 @@ class MemoryWriter(MetricWriter):
     def write_hparams(self, hparams: Mapping[str, Any]):
         assert self.hparams is None, "Hyperparameters can only be set once."
         self.hparams = hparams
-
-    def flush(self):
-        pass
-
-    def close(self):
-        pass
