@@ -27,6 +27,9 @@ jobs:
       - name: pytest mlflow
         run: uv run --extra test --extra mlflow --extra audio-video pytest --capture=no --verbose --cov --cov-report=xml --cov-append jax_loop_utils/metric_writers/mlflow
         working-directory: src
+      - name: pytest audio-video
+        run: uv run --extra test --extra audio-video pytest --capture=no --verbose --cov --cov-report=xml --cov-append jax_loop_utils/metric_writers/_audio_video
+        working-directory: src
       - name: Upload coverage reports to Codecov
         if: always()
         uses: codecov/codecov-action@v4
