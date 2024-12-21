@@ -1,5 +1,7 @@
 """MLflow implementation of MetricWriter interface."""
 
+import pathlib
+import tempfile
 from collections.abc import Mapping
 from time import time
 from typing import Any
@@ -11,6 +13,11 @@ import mlflow.tracking.fluent
 import numpy as np
 from absl import logging
 
+try:
+    import PIL
+except ImportError:
+    PIL = None
+
 from jax_loop_utils.metric_writers.interface import (
     Array,
     Scalar,
@@ -18,6 +25,17 @@ from jax_loop_utils.metric_writers.interface import (
 from jax_loop_utils.metric_writers.interface import (
     MetricWriter as MetricWriterInterface,
 )
+
+
+def _video_array_to_file(video_array: Array, key: str, step: int) -> pathlib.Path:
+    """Convert a video array to a file."""
+    frames = [PIL.Image.fromarray(frame) for frame in video_array]
+    # MLFlow UI shows GIFs natively, so we use that format.
+    fp, path = tempfile.mkstemp(prefix=f"{key}_{step:09d}", suffix=".gif")
+    with open(fp, "wb") as f:
+        frame_0 = frames[0]
+        frame_0.save(f, format="GIF", fps=8, save_all=True, append_images=frames[1:])
+    return pathlib.Path(path)
 
 
 class MlflowMetricWriter(MetricWriterInterface):
@@ -73,14 +91,25 @@ class MlflowMetricWriter(MetricWriterInterface):
             )
 
     def write_videos(self, step: int, videos: Mapping[str, Array]):
-        """MLflow doesn't support video logging directly."""
-        # this could be supported if we convert the video to a file
-        # and log the file as an artifact.
-        logging.log_first_n(
-            logging.WARNING,
-            "mlflow.MetricWriter does not support writing videos.",
-            1,
-        )
+        """Convert videos to images and write them to MLflow.
+
+        Requires pillow to be installed.
+        """
+        if PIL is None:
+            logging.log_first_n(
+                logging.WARNING,
+                "MlflowMetricWriter.write_videos requires pillow to be installed.",
+                1,
+            )
+            return
+
+        for key, video_array in videos.items():
+            local_path = _video_array_to_file(video_array, key, step)
+            self._client.log_artifact(
+                self._run_id,
+                local_path,
+                artifact_path="images",
+            )
 
     def write_audios(self, step: int, audios: Mapping[str, Array], *, sample_rate: int):
         """MLflow doesn't support audio logging directly."""
