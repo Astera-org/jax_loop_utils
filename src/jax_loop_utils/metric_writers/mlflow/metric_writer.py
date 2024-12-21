@@ -1,5 +1,7 @@
 """MLflow implementation of MetricWriter interface."""
 
+import pathlib
+import tempfile
 from collections.abc import Mapping
 from time import time
 from typing import Any
@@ -15,14 +17,17 @@ from absl import logging
 
 from jax_loop_utils.metric_writers.interface import (
     Array,
+    MetricWriter,
     Scalar,
 )
-from jax_loop_utils.metric_writers.interface import (
-    MetricWriter as MetricWriterInterface,
-)
+
+try:
+    from jax_loop_utils.metric_writers import _audio_video
+except ImportError:
+    _audio_video = None
 
 
-class MlflowMetricWriter(MetricWriterInterface):
+class MlflowMetricWriter(MetricWriter):
     """Writes metrics to MLflow Tracking."""
 
     def __init__(
@@ -91,18 +96,36 @@ class MlflowMetricWriter(MetricWriterInterface):
             )
 
     def write_videos(self, step: int, videos: Mapping[str, Array]):
-        """MLflow doesn't support video logging directly."""
-        # this could be supported if we convert the video to a file
-        # and log the file as an artifact.
-        logging.log_first_n(
-            logging.WARNING,
-            "mlflow.MetricWriter does not support writing videos.",
-            1,
-        )
+        """Convert videos to images and write them to MLflow.
+
+        Requires pillow to be installed.
+        """
+        if _audio_video is None:
+            logging.log_first_n(
+                logging.WARNING,
+                "MlflowMetricWriter.write_videos requires the [video] extra to be installed.",
+                1,
+            )
+            return
+
+        temp_dir = tempfile.mkdtemp()
+
+        for key, video_array in videos.items():
+            local_path = (
+                pathlib.Path(temp_dir)
+                / f"{key}_{step:09d}.{_audio_video.CONTAINER_FORMAT}"
+            )
+            with open(local_path, "wb") as f:
+                _audio_video.encode_video(video_array, f)
+            self._client.log_artifact(
+                self._run_id,
+                local_path,
+                artifact_path="videos",
+            )
 
     def write_audios(self, step: int, audios: Mapping[str, Array], *, sample_rate: int):
         """MLflow doesn't support audio logging directly."""
-        # this could be supported if we convert the video to a file
+        # this could be supported if we convert the audio to a file
         # and log the file as an artifact.
         logging.log_first_n(
             logging.WARNING,
