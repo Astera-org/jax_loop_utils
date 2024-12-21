@@ -1,10 +1,10 @@
 import tempfile
 import time
 
+import jax.numpy as jnp
 import mlflow
 import mlflow.entities
 import numpy as np
-import jax.numpy as jnp
 from absl.testing import absltest
 
 from jax_loop_utils.metric_writers.mlflow import MlflowMetricWriter
@@ -115,12 +115,28 @@ class MlflowMetricWriterTest(absltest.TestCase):
             self.assertEqual(run.data.params["batch_size"], "32")
             self.assertEqual(run.data.params["epochs"], "100")
 
+    def test_write_videos(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tracking_uri = f"file://{temp_dir}"
+            experiment_name = "experiment_name"
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
+
+            # Generate 100 frames of noise video
+            frames = []
+            for _ in range(100):
+                frame = np.random.randint(0, 256, (64, 64, 3), dtype=np.uint8)
+                frames.append(frame)
+
+            # Stack frames into video array [frames, height, width, channels]
+            video = np.stack(frames, axis=0)
+            writer.write_videos(0, {"noise_video": video})
+            writer.close()
+
     def test_no_ops(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
             experiment_name = "experiment_name"
             writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
-            writer.write_videos(0, {"video": np.zeros((4, 28, 28, 3))})
             writer.write_audios(0, {"audio": np.zeros((2, 1000))}, sample_rate=16000)
             writer.write_histograms(
                 0, {"histogram": np.zeros((10,))}, num_buckets={"histogram": 10}
