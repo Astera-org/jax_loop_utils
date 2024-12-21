@@ -1,9 +1,10 @@
 """MLflow implementation of MetricWriter interface."""
 
+import os
 import pathlib
 import tempfile
+import time
 from collections.abc import Mapping
-from time import time
 from typing import Any
 
 import mlflow
@@ -15,6 +16,7 @@ import mlflow.tracking.fluent
 import numpy as np
 from absl import logging
 
+from jax_loop_utils import asynclib
 from jax_loop_utils.metric_writers.interface import (
     Array,
     MetricWriter,
@@ -25,6 +27,10 @@ try:
     from jax_loop_utils.metric_writers import _audio_video
 except ImportError:
     _audio_video = None
+
+
+def _noop_decorator(func):
+    return func
 
 
 class MlflowMetricWriter(MetricWriter):
@@ -77,7 +83,7 @@ class MlflowMetricWriter(MetricWriter):
 
     def write_scalars(self, step: int, scalars: Mapping[str, Scalar]):
         """Write scalar metrics to MLflow."""
-        timestamp = int(time() * 1000)
+        timestamp = int(time.time() * 1000)
         metrics_list = [
             mlflow.entities.Metric(k, float(v), timestamp, step)
             for k, v in scalars.items()
@@ -108,20 +114,36 @@ class MlflowMetricWriter(MetricWriter):
             )
             return
 
-        temp_dir = tempfile.mkdtemp()
+        pool = asynclib.Pool()
 
-        for key, video_array in videos.items():
-            local_path = (
-                pathlib.Path(temp_dir)
-                / f"{key}_{step:09d}.{_audio_video.CONTAINER_FORMAT}"
+        if len(videos) > 1:
+            maybe_async = pool
+        else:
+            maybe_async = _noop_decorator
+
+        encode_and_log = maybe_async(self._encode_and_log_video)
+
+        temp_dir = pathlib.Path(tempfile.mkdtemp())
+        paths_arrays = [
+            (
+                temp_dir / f"{key}_{step:09d}.{_audio_video.CONTAINER_FORMAT}",
+                video_array,
             )
-            with open(local_path, "wb") as f:
-                _audio_video.encode_video(video_array, f)
-            self._client.log_artifact(
-                self._run_id,
-                local_path,
-                artifact_path="videos",
-            )
+            for key, video_array in videos.items()
+        ]
+
+        for path, video_array in paths_arrays:
+            encode_and_log(path, video_array)
+
+        pool.close()
+
+    def _encode_and_log_video(self, path: pathlib.Path, video_array: Array):
+        with open(path, "wb") as f:
+            _audio_video.encode_video(video_array, f)  # pyright: ignore[reportOptionalMemberAccess]
+        # If log_artifact(synchronous=False) existed,
+        # we could synchronize with self.flush() rather than at the end of write_videos.
+        # https://github.com/mlflow/mlflow/issues/14153
+        self._client.log_artifact(self._run_id, path, os.path.join("videos", path.name))
 
     def write_audios(self, step: int, audios: Mapping[str, Array], *, sample_rate: int):
         """MLflow doesn't support audio logging directly."""

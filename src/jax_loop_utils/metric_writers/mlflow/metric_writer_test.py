@@ -1,5 +1,4 @@
 import tempfile
-import time
 
 import jax.numpy as jnp
 import mlflow
@@ -85,9 +84,6 @@ class MlflowMetricWriterTest(absltest.TestCase):
             # the string "images" is hardcoded in MlflowClient.log_image.
             artifacts = writer._client.list_artifacts(run.info.run_id, "images")
             if not artifacts:
-                # have seen some latency in artifacts becoming available
-                # Maybe file system sync? Not sure.
-                time.sleep(0.1)
                 artifacts = writer._client.list_artifacts(run.info.run_id, "images")
             artifact_paths = [artifact.path for artifact in artifacts]
             self.assertGreaterEqual(len(artifact_paths), 1)
@@ -144,10 +140,30 @@ class MlflowMetricWriterTest(absltest.TestCase):
                 frame = np.random.randint(0, 256, (64, 64, 3), dtype=np.uint8)
                 frames.append(frame)
 
-            # Stack frames into video array [frames, height, width, channels]
-            video = np.stack(frames, axis=0)
-            writer.write_videos(0, {"noise_video": video})
+            videos = {
+                "noise_0": np.stack(frames, axis=0),
+                "noise_1": np.stack(frames, axis=0),
+            }
+            writer.write_videos(0, videos)
             writer.close()
+
+            # Verify artifacts were written
+            runs = _get_runs(tracking_uri, experiment_name)
+            self.assertEqual(len(runs), 1)
+            run = runs[0]
+
+            artifacts = writer._client.list_artifacts(run.info.run_id, "videos")
+            if not artifacts:
+                artifacts = writer._client.list_artifacts(run.info.run_id, "videos")
+
+            artifact_paths = [artifact.path for artifact in artifacts]
+            self.assertEqual(len(artifact_paths), 2)
+            self.assertTrue(
+                any(path.startswith("videos/noise_0") for path in artifact_paths)
+            )
+            self.assertTrue(
+                any(path.startswith("videos/noise_1") for path in artifact_paths)
+            )
 
     def test_no_ops(self):
         with tempfile.TemporaryDirectory() as temp_dir:
