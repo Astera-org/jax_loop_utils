@@ -34,6 +34,13 @@ def _exceptional_mlflow_client_class(
 
 
 class MlflowMetricWriterTest(absltest.TestCase):
+    def test_set_tags(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tracking_uri = f"file://{temp_dir}"
+            experiment_name = "experiment_name"
+            writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
+            writer.set_tags({"ooh": "aah"})
+
     def test_write_scalars(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             tracking_uri = f"file://{temp_dir}"
