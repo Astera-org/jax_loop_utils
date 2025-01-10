@@ -80,13 +80,9 @@ class AsyncWriterTest(absltest.TestCase):
             writer1.write_scalars(0, {"a": 3, "b": 0.15})
             writer2.write_scalars(2, {"a": 5, "b": 0.007})
 
-        sync_writer1.write_scalars.assert_has_calls(
-            [mock.call(step=0, scalars={"a": 3, "b": 0.15})]
-        )
+        sync_writer1.write_scalars.assert_has_calls([mock.call(step=0, scalars={"a": 3, "b": 0.15})])
 
-        sync_writer2.write_scalars.assert_has_calls(
-            [mock.call(step=2, scalars={"a": 5, "b": 0.007})]
-        )
+        sync_writer2.write_scalars.assert_has_calls([mock.call(step=2, scalars={"a": 5, "b": 0.007})])
 
         sync_writer1.flush.assert_called_once()
         sync_writer2.flush.assert_called_once()

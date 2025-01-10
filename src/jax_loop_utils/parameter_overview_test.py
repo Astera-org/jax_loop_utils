@@ -14,12 +14,12 @@
 
 """Tests for parameter overviews."""
 
-from absl.testing import absltest
-from jax_loop_utils import parameter_overview
 import jax
 import jax.numpy as jnp
 import numpy as np
+from absl.testing import absltest
 
+from jax_loop_utils import parameter_overview
 
 EMPTY_PARAMETER_OVERVIEW = """+------+-------+-------+------+------+-----+
 | Name | Shape | Dtype | Size | Mean | Std |
@@ -51,7 +51,8 @@ CONV2D_PARAMETER_OVERVIEW_WITH_STATS = """+-------------+--------------+--------
 +-------------+--------------+---------+------+------+-----+
 Total: 56 -- 224 bytes"""
 
-CONV2D_PARAMETER_OVERVIEW_WITH_STATS_AND_SHARDING = """+-------------+--------------+---------+------+------+-----+----------+
+CONV2D_PARAMETER_OVERVIEW_WITH_STATS_AND_SHARDING = """\
++-------------+--------------+---------+------+------+-----+----------+
 | Name        | Shape        | Dtype   | Size | Mean | Std | Sharding |
 +-------------+--------------+---------+------+------+-----+----------+
 | conv/bias   | (2,)         | float32 | 2    | 1.0  | 0.0 | ()       |
@@ -71,9 +72,7 @@ class JaxParameterOverviewTest(absltest.TestCase):
         self.assertEqual(56, parameter_overview.count_parameters(params))
 
     def test_get_parameter_overview_empty(self):
-        self.assertEqual(
-            EMPTY_PARAMETER_OVERVIEW, parameter_overview.get_parameter_overview({})
-        )
+        self.assertEqual(EMPTY_PARAMETER_OVERVIEW, parameter_overview.get_parameter_overview({}))
 
     def test_get_parameter_overview(self):
         # Weights of a 2D convolution with 2 filters.
@@ -104,18 +103,12 @@ class JaxParameterOverviewTest(absltest.TestCase):
         params_shape_dtype_struct = jax.eval_shape(lambda: params)
         self.assertEqual(
             CONV2D_PARAMETER_OVERVIEW,
-            parameter_overview.get_parameter_overview(
-                params_shape_dtype_struct, include_stats=False
-            ),
+            parameter_overview.get_parameter_overview(params_shape_dtype_struct, include_stats=False),
         )
 
     def test_printing_bool(self):
-        self.assertEqual(
-            parameter_overview._default_table_value_formatter(True), "True"
-        )
-        self.assertEqual(
-            parameter_overview._default_table_value_formatter(False), "False"
-        )
+        self.assertEqual(parameter_overview._default_table_value_formatter(True), "True")
+        self.assertEqual(parameter_overview._default_table_value_formatter(False), "False")
 
 
 if __name__ == "__main__":
