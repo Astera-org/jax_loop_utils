@@ -60,7 +60,7 @@ jobs:
         with:
           enable-cache: true
       - name: ruff format
-        run: uv run -- ruff format
+        run: uv run -- ruff format --check
       - name: ruff check
         run: uv run -- ruff check
 
