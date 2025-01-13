@@ -28,7 +28,9 @@ from jax_loop_utils.internal import flax
 
 
 @flax.struct.dataclass
-class CollectingMetricAccuracy(metrics.CollectingMetric.from_outputs(("logits", "labels"))):
+class CollectingMetricAccuracy(
+    metrics.CollectingMetric.from_outputs(("logits", "labels"))
+):
     def compute(self):
         values = super().compute()
         logits = values["logits"]
@@ -79,7 +81,8 @@ class MetricsTest(parameterized.TestCase):
             jnp.array([True, False]),
         )
         self.model_outputs_masked = tuple(
-            dict(mask=mask, **model_output) for mask, model_output in zip(masks, self.model_outputs, strict=False)
+            dict(mask=mask, **model_output)
+            for mask, model_output in zip(masks, self.model_outputs, strict=False)
         )
 
         self.count = 4
@@ -103,7 +106,9 @@ class MetricsTest(parameterized.TestCase):
         }
 
         # Stack all values. Can for example be used in a pmap().
-        self.model_outputs_stacked = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *self.model_outputs)
+        self.model_outputs_stacked = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), *self.model_outputs
+        )
         self.model_outputs_masked_stacked = jax.tree_util.tree_map(
             lambda *args: jnp.stack(args), *self.model_outputs_masked
         )
@@ -123,8 +128,13 @@ class MetricsTest(parameterized.TestCase):
 
         def compute_metric(model_outputs):
             if reduce:
-                metric_list = [metric_class.from_model_output(**model_output) for model_output in model_outputs]
-                metric_stacked = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *metric_list)
+                metric_list = [
+                    metric_class.from_model_output(**model_output)
+                    for model_output in model_outputs
+                ]
+                metric_stacked = jax.tree_util.tree_map(
+                    lambda *args: jnp.stack(args), *metric_list
+                )
                 metric = metric_stacked.reduce()
             else:
                 metric = metric_class.empty()
@@ -140,17 +150,31 @@ class MetricsTest(parameterized.TestCase):
     def test_metric_last_value_reduce(self):
         metric1 = metrics.LastValue.from_model_output(jnp.array([1, 2]))
         metric2 = metrics.LastValue.from_model_output(jnp.array([3, 4]))
-        metric3 = metrics.LastValue.from_model_output(jnp.array([3, 4]), jnp.array([0, 0]))
-        metric12 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric1, metric2)
-        metric21 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric2, metric1)
+        metric3 = metrics.LastValue.from_model_output(
+            jnp.array([3, 4]), jnp.array([0, 0])
+        )
+        metric12 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric1, metric2
+        )
+        metric21 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric2, metric1
+        )
         self.assertEqual(metric12.reduce().value, 2.5)
 
-        chex.assert_trees_all_equal(metric12.reduce().compute(), metric21.reduce().compute())
+        chex.assert_trees_all_equal(
+            metric12.reduce().compute(), metric21.reduce().compute()
+        )
 
-        metric13 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric1, metric3)
-        metric31 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric1, metric3)
+        metric13 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric1, metric3
+        )
+        metric31 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric1, metric3
+        )
         self.assertEqual(metric13.reduce().value, 1.5)
-        chex.assert_trees_all_equal(metric13.reduce().compute(), metric31.reduce().compute())
+        chex.assert_trees_all_equal(
+            metric13.reduce().compute(), metric31.reduce().compute()
+        )
 
     def test_metric_last_value(self):
         metric0 = metrics.LastValue.from_model_output(jnp.array([]))
@@ -193,12 +217,16 @@ class MetricsTest(parameterized.TestCase):
             return (logits.argmax(axis=-1) == labels).astype(jnp.float32)
 
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Average.from_fun(accuracy), reduce=False)(self.model_outputs),
+            self.make_compute_metric(metrics.Average.from_fun(accuracy), reduce=False)(
+                self.model_outputs
+            ),
             self.results["train_accuracy"],
         )
 
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Average.from_fun(accuracy), reduce=False)(self.model_outputs_masked),
+            self.make_compute_metric(metrics.Average.from_fun(accuracy), reduce=False)(
+                self.model_outputs_masked
+            ),
             self.results_masked["train_accuracy"],
         )
 
@@ -211,16 +239,16 @@ class MetricsTest(parameterized.TestCase):
             return dict(logits=logits, labels=labels)
 
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Accuracy.from_fun(make_accuracy_args_map), reduce=False)(
-                self.model_outputs
-            ),
+            self.make_compute_metric(
+                metrics.Accuracy.from_fun(make_accuracy_args_map), reduce=False
+            )(self.model_outputs),
             self.results["train_accuracy"],
         )
 
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Accuracy.from_fun(make_accuracy_args_map), reduce=False)(
-                self.model_outputs_masked
-            ),
+            self.make_compute_metric(
+                metrics.Accuracy.from_fun(make_accuracy_args_map), reduce=False
+            )(self.model_outputs_masked),
             self.results_masked["train_accuracy"],
         )
 
@@ -278,7 +306,9 @@ class MetricsTest(parameterized.TestCase):
     )
     def test_merge_asserts_shape(self, metric_cls):
         metric1 = metric_cls.from_model_output(jnp.arange(3.0))
-        metric2 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric1, metric1)
+        metric2 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric1, metric1
+        )
         with self.assertRaisesRegex(ValueError, r"^Expected same shape"):
             metric1.merge(metric2)
 
@@ -294,7 +324,9 @@ class MetricsTest(parameterized.TestCase):
 
     def test_last_value_asserts_shape(self):
         metric1 = metrics.LastValue.from_model_output(jnp.arange(3.0))
-        metric2 = jax.tree_util.tree_map(lambda *args: jnp.stack(args), metric1, metric1)
+        metric2 = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), metric1, metric1
+        )
         with self.assertRaisesRegex(ValueError, r"^Expected same shape"):
             metric1.merge(metric2)
 
@@ -304,11 +336,15 @@ class MetricsTest(parameterized.TestCase):
     )
     def test_loss_average(self, reduce):
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Average.from_output("loss"), reduce)(self.model_outputs_masked),
+            self.make_compute_metric(metrics.Average.from_output("loss"), reduce)(
+                self.model_outputs_masked
+            ),
             self.model_outputs_stacked["loss"].mean(),
         )
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Average.from_output("example_loss"), reduce)(self.model_outputs_masked),
+            self.make_compute_metric(
+                metrics.Average.from_output("example_loss"), reduce
+            )(self.model_outputs_masked),
             self.model_outputs_stacked["loss"].mean(),
         )
 
@@ -318,12 +354,16 @@ class MetricsTest(parameterized.TestCase):
     )
     def test_loss_std(self, reduce):
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Std.from_output("loss"), reduce)(self.model_outputs_masked),
+            self.make_compute_metric(metrics.Std.from_output("loss"), reduce)(
+                self.model_outputs_masked
+            ),
             self.model_outputs_stacked["loss"].std(),
             atol=1e-4,
         )
         chex.assert_trees_all_close(
-            self.make_compute_metric(metrics.Std.from_output("example_loss"), reduce)(self.model_outputs_masked),
+            self.make_compute_metric(metrics.Std.from_output("example_loss"), reduce)(
+                self.model_outputs_masked
+            ),
             self.model_outputs_stacked["loss"].std(),
             atol=1e-4,
         )
@@ -389,7 +429,9 @@ class MetricsTest(parameterized.TestCase):
 
         model_outputs = self.model_outputs_masked if masked else self.model_outputs
         collection = compute_collection(model_outputs)
-        chex.assert_trees_all_close(collection.compute(), self.results_masked if masked else self.results)
+        chex.assert_trees_all_close(
+            collection.compute(), self.results_masked if masked else self.results
+        )
         self.assertEqual(
             collection.train_accuracy.count,
             self.count_masked if masked else self.count,
@@ -402,8 +444,13 @@ class MetricsTest(parameterized.TestCase):
     @mock.patch("jax.lax.all_gather")
     def test_collection_gather(self, masked, all_gather_mock):
         model_outputs = self.model_outputs_masked if masked else self.model_outputs
-        collections = [Collection.single_from_model_output(**model_output) for model_output in (model_outputs)]
-        all_gather_mock.return_value = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *collections)
+        collections = [
+            Collection.single_from_model_output(**model_output)
+            for model_output in (model_outputs)
+        ]
+        all_gather_mock.return_value = jax.tree_util.tree_map(
+            lambda *args: jnp.stack(args), *collections
+        )
 
         def compute_collection(model_outputs):
             collection = Collection.gather_from_model_output(**model_outputs[0])
@@ -425,23 +472,34 @@ class MetricsTest(parameterized.TestCase):
 
         if jax.local_device_count() > 1:
             chex.assert_trees_all_close(
-                compute_collection(self.model_outputs_masked_stacked if masked else self.model_outputs_stacked)
+                compute_collection(
+                    self.model_outputs_masked_stacked
+                    if masked
+                    else self.model_outputs_stacked
+                )
                 .unreplicate()
                 .compute(),
                 self.results_gather_masked if masked else self.results_gather,
             )
 
     def test_collection_asserts_replication(self):
-        collections = [Collection.single_from_model_output(**model_output) for model_output in self.model_outputs]
+        collections = [
+            Collection.single_from_model_output(**model_output)
+            for model_output in self.model_outputs
+        ]
         collection = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *collections)
         with self.assertRaisesRegex(ValueError, r"^Collection is still replicated"):
             collection.compute()
 
     def test_collecting_metric(self):
         metric_class = metrics.CollectingMetric.from_outputs(("logits", "loss"))
-        logits = np.concatenate([model_output["logits"] for model_output in self.model_outputs])
+        logits = np.concatenate(
+            [model_output["logits"] for model_output in self.model_outputs]
+        )
         loss = np.array([model_output["loss"] for model_output in self.model_outputs])
-        result = self.make_compute_metric(metric_class, reduce=False, jit=False)(self.model_outputs)
+        result = self.make_compute_metric(metric_class, reduce=False, jit=False)(
+            self.model_outputs
+        )
         chex.assert_trees_all_close(
             result,
             {
@@ -478,7 +536,9 @@ class MetricsTest(parameterized.TestCase):
     def test_collecting_metric_tracer(self):
         metric_class = metrics.CollectingMetric.from_outputs(("logits",))
         with self.assertRaisesRegex(RuntimeError, r"^Tracer detected!"):
-            _ = self.make_compute_metric(metric_class, reduce=False, jit=True)(self.model_outputs)
+            _ = self.make_compute_metric(metric_class, reduce=False, jit=True)(
+                self.model_outputs
+            )
 
     def test_collection_mixed_async(self):
         metric = CollectionMixed.empty()
@@ -539,7 +599,9 @@ class MetricsTest(parameterized.TestCase):
             (metrics.Std, jnp.std),
         ],
     )
-    def test_tensor_aggregation_metrics_with_masks(self, value_mask_pair, metric_np_equivalent_pair):
+    def test_tensor_aggregation_metrics_with_masks(
+        self, value_mask_pair, metric_np_equivalent_pair
+    ):
         values, mask = value_mask_pair
         metric, np_equivalent = metric_np_equivalent_pair
         values = jnp.asarray(values)

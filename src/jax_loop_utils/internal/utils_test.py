@@ -32,16 +32,24 @@ class HelpersTest(absltest.TestCase):
             pass
         self.assertLen(logs.output, 2)
         self.assertEqual(logs.output[0], "INFO:absl:test_activity ...")
-        self.assertRegex(logs.output[1], r"^INFO:absl:test_activity finished after \d+.\d\ds.$")
+        self.assertRegex(
+            logs.output[1], r"^INFO:absl:test_activity finished after \d+.\d\ds.$"
+        )
 
     def test_log_activity_fails(
         self,
     ):
-        with self.assertRaises(TestError), self.assertLogs() as logs, utils.log_activity("test_activity"):
+        with (
+            self.assertRaises(TestError),
+            self.assertLogs() as logs,
+            utils.log_activity("test_activity"),
+        ):
             raise TestError()
         self.assertLen(logs.output, 2)
         self.assertEqual(logs.output[0], "INFO:absl:test_activity ...")
-        self.assertRegex(logs.output[1], r"^ERROR:absl:test_activity FAILED after \d+.\d\ds")
+        self.assertRegex(
+            logs.output[1], r"^ERROR:absl:test_activity FAILED after \d+.\d\ds"
+        )
 
     def test_logged_with(self):
         @utils.logged_with("test_activity")
@@ -52,7 +60,9 @@ class HelpersTest(absltest.TestCase):
             test()
         self.assertLen(logs.output, 2)
         self.assertEqual(logs.output[0], "INFO:absl:test_activity ...")
-        self.assertRegex(logs.output[1], r"^INFO:absl:test_activity finished after \d+.\d\ds.$")
+        self.assertRegex(
+            logs.output[1], r"^INFO:absl:test_activity finished after \d+.\d\ds.$"
+        )
 
     def test_logged_with_fails(self):
         @utils.logged_with("test_activity")
@@ -63,7 +73,9 @@ class HelpersTest(absltest.TestCase):
             test()
         self.assertLen(logs.output, 2)
         self.assertEqual(logs.output[0], "INFO:absl:test_activity ...")
-        self.assertRegex(logs.output[1], r"^ERROR:absl:test_activity FAILED after \d+.\d\ds")
+        self.assertRegex(
+            logs.output[1], r"^ERROR:absl:test_activity FAILED after \d+.\d\ds"
+        )
 
     def test_check_param(self):
         a = jnp.array(0.0)

@@ -389,9 +389,13 @@ class CollectingMetric(Metric):
         return cls(values={})
 
     def merge(self, other: CollectingMetric) -> CollectingMetric:
-        values = {name: (*value, *other.values[name]) for name, value in self.values.items()}
+        values = {
+            name: (*value, *other.values[name]) for name, value in self.values.items()
+        }
         if any(isinstance(vv, jax.core.Tracer) for v in values.values() for vv in v):  # pylint: disable=g-complex-comprehension
-            raise RuntimeError("Tracer detected! CollectingMetric cannot be JIT compiled.")
+            raise RuntimeError(
+                "Tracer detected! CollectingMetric cannot be JIT compiled."
+            )
         if other.values and not self.values:
             return other
         if self.values and not other.values:
@@ -499,7 +503,9 @@ class Collection:
         Returns:
           A subclass of Collection with fields defined by provided `metrics`.
         """
-        return flax.struct.dataclass(type("_InlineCollection", (Collection,), {"__annotations__": metrics}))
+        return flax.struct.dataclass(
+            type("_InlineCollection", (Collection,), {"__annotations__": metrics})
+        )
 
     @classmethod
     def create_collection(cls, **metrics: Metric) -> Collection:
@@ -533,7 +539,10 @@ class Collection:
     def empty(cls: type[C]) -> C:
         return cls(
             _reduction_counter=_ReductionCounter(jnp.array(1, dtype=jnp.int32)),
-            **{metric_name: metric.empty() for metric_name, metric in cls.__annotations__.items()},
+            **{
+                metric_name: metric.empty()
+                for metric_name, metric in cls.__annotations__.items()
+            },
         )
 
     @classmethod
@@ -541,7 +550,10 @@ class Collection:
         """Creates a `Collection` from model outputs."""
         return cls(
             _reduction_counter=_ReductionCounter(jnp.array(1, dtype=jnp.int32)),
-            **{metric_name: metric.from_model_output(**kwargs) for metric_name, metric in cls.__annotations__.items()},
+            **{
+                metric_name: metric.from_model_output(**kwargs)
+                for metric_name, metric in cls.__annotations__.items()
+            },
         )
 
     @classmethod
@@ -572,12 +584,17 @@ class Collection:
           A metric collection from provided `kwargs` model outputs that contains
           metrics for all devices across all hosts.
         """
-        return jax.lax.all_gather(cls._from_model_output(**kwargs), axis_name=axis_name).reduce()
+        return jax.lax.all_gather(
+            cls._from_model_output(**kwargs), axis_name=axis_name
+        ).reduce()
 
     def merge(self: C, other: C) -> C:
         """Returns `Collection` that is the accumulation of `self` and `other`."""
         return type(self)(
-            **{metric_name: metric.merge(getattr(other, metric_name)) for metric_name, metric in vars(self).items()}
+            **{
+                metric_name: metric.merge(getattr(other, metric_name))
+                for metric_name, metric in vars(self).items()
+            }
         )
 
     def reduce(self: C) -> C:
@@ -607,7 +624,12 @@ class Collection:
         Returns:
           Reduced collection.
         """
-        return type(self)(**{metric_name: metric.reduce() for metric_name, metric in vars(self).items()})
+        return type(self)(
+            **{
+                metric_name: metric.reduce()
+                for metric_name, metric in vars(self).items()
+            }
+        )
 
     def compute(self) -> dict[str, jnp.ndarray]:
         """Returns a dictionary mapping metric field name to `Metric.compute()`."""
@@ -691,7 +713,9 @@ class LastValue(Metric):
         # the constructor for backward compatibility when it was LastValue(value).
         count = count if count is not _default else jnp.array(1, dtype=jnp.int32)
         if (value is _default) == (total is _default):
-            raise ValueError(f"Exactly one of 'total' and 'value' should be passed. Got {total}, {value}")
+            raise ValueError(
+                f"Exactly one of 'total' and 'value' should be passed. Got {total}, {value}"
+            )
         if total is _default:
             total = value * count
         object.__setattr__(self, "total", total)
@@ -702,7 +726,9 @@ class LastValue(Metric):
         return cls(jnp.array(0, jnp.float32), count=jnp.array(0, jnp.int32))
 
     @classmethod
-    def from_model_output(cls, value: jnp.ndarray, mask: jnp.ndarray | None = None, **_) -> LastValue:
+    def from_model_output(
+        cls, value: jnp.ndarray, mask: jnp.ndarray | None = None, **_
+    ) -> LastValue:
         if mask is None:
             mask = jnp.ones((value.shape or [()])[0])
         return cls(
@@ -777,7 +803,9 @@ class Average(Metric):
         return cls(total=jnp.array(0, jnp.float32), count=jnp.array(0, jnp.int32))
 
     @classmethod
-    def from_model_output(cls, values: jnp.ndarray, mask: jnp.ndarray | None = None, **_) -> Average:
+    def from_model_output(
+        cls, values: jnp.ndarray, mask: jnp.ndarray | None = None, **_
+    ) -> Average:
         values, mask = _broadcast_masks(values, mask)
         return cls(
             total=jnp.where(mask, values, jnp.zeros_like(values)).sum(),
@@ -820,7 +848,9 @@ class Std(Metric):
         )
 
     @classmethod
-    def from_model_output(cls, values: jnp.ndarray, mask: jnp.ndarray | None = None, **_) -> Std:
+    def from_model_output(
+        cls, values: jnp.ndarray, mask: jnp.ndarray | None = None, **_
+    ) -> Std:
         values, mask = _broadcast_masks(values, mask)
         return cls(
             total=jnp.where(mask, values, jnp.zeros_like(values)).sum(),
@@ -866,10 +896,14 @@ class Accuracy(Average):
     """
 
     @classmethod
-    def from_model_output(cls, *, logits: jnp.ndarray, labels: jnp.ndarray, **kwargs) -> Accuracy:
+    def from_model_output(
+        cls, *, logits: jnp.ndarray, labels: jnp.ndarray, **kwargs
+    ) -> Accuracy:
         if logits.ndim != labels.ndim + 1 or labels.dtype != jnp.int32:
             raise ValueError(
                 f"Expected labels.dtype==jnp.int32 and logits.ndim={logits.ndim}==labels.ndim+1={labels.ndim + 1}"
             )
-        metric = super().from_model_output(values=(logits.argmax(axis=-1) == labels).astype(jnp.float32), **kwargs)
+        metric = super().from_model_output(
+            values=(logits.argmax(axis=-1) == labels).astype(jnp.float32), **kwargs
+        )
         return cls(**vars(metric))  # cls(metrics) doesn't work for a dataclass

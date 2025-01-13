@@ -136,7 +136,9 @@ class Pool:
                 except Exception as e:
                     with self._errors_mutex:
                         self._errors.append(sys.exc_info())
-                    logging.exception("Error in producer thread for %s", self._thread_name_prefix)
+                    logging.exception(
+                        "Error in producer thread for %s", self._thread_name_prefix
+                    )
                     raise e
                 finally:
                     self._queue_length -= 1

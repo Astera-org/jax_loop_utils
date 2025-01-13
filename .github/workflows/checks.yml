@@ -74,5 +74,5 @@ jobs:
       - name: uv sync
         run: uv sync --all-extras
       - name: pyright
-        # TODO: add more dependencies as we fix the violations
+        # TODO: check more directories as we fix the violations
         run: uv run -- pyright src/jax_loop_utils/metric_writers/

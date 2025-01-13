@@ -29,13 +29,17 @@ class LoggingWriterTest(absltest.TestCase):
         with self.assertLogs(level="INFO") as logs:
             self.writer.write_scalars(0, {"a": 3, "b": 0.15})
             self.writer.write_scalars(2, {"a": 0.0000005, "b": 0.007})
-        self.assertEqual(logs.output, ["INFO:absl:[0] a=3, b=0.15", "INFO:absl:[2] a=5e-07, b=0.007"])
+        self.assertEqual(
+            logs.output, ["INFO:absl:[0] a=3, b=0.15", "INFO:absl:[2] a=5e-07, b=0.007"]
+        )
 
     def test_write_images(self):
         images = np.zeros((2, 28, 28, 3))
         with self.assertLogs(level="INFO") as logs:
             self.writer.write_images(4, {"input_images": images})
-        self.assertEqual(logs.output, ["INFO:absl:[4] Got images: {'input_images': (2, 28, 28, 3)}."])
+        self.assertEqual(
+            logs.output, ["INFO:absl:[4] Got images: {'input_images': (2, 28, 28, 3)}."]
+        )
 
     def test_write_videos(self):
         videos = np.zeros((2, 4, 28, 28, 3))
@@ -64,7 +68,9 @@ class LoggingWriterTest(absltest.TestCase):
             )
         # Note: There are 31 distinct values [0, 1, ..., 30], and 30 buckets by
         # default. Last bucket gets 2 values.
-        expected_histo_b = ", ".join([f"[{i}, {i + 1}): 1" for i in range(29)] + ["[29, 30]: 2"])
+        expected_histo_b = ", ".join(
+            [f"[{i}, {i + 1}): 1" for i in range(29)] + ["[29, 30]: 2"]
+        )
         self.assertEqual(
             logs.output,
             [

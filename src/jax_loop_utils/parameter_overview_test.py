@@ -72,7 +72,9 @@ class JaxParameterOverviewTest(absltest.TestCase):
         self.assertEqual(56, parameter_overview.count_parameters(params))
 
     def test_get_parameter_overview_empty(self):
-        self.assertEqual(EMPTY_PARAMETER_OVERVIEW, parameter_overview.get_parameter_overview({}))
+        self.assertEqual(
+            EMPTY_PARAMETER_OVERVIEW, parameter_overview.get_parameter_overview({})
+        )
 
     def test_get_parameter_overview(self):
         # Weights of a 2D convolution with 2 filters.
@@ -103,12 +105,18 @@ class JaxParameterOverviewTest(absltest.TestCase):
         params_shape_dtype_struct = jax.eval_shape(lambda: params)
         self.assertEqual(
             CONV2D_PARAMETER_OVERVIEW,
-            parameter_overview.get_parameter_overview(params_shape_dtype_struct, include_stats=False),
+            parameter_overview.get_parameter_overview(
+                params_shape_dtype_struct, include_stats=False
+            ),
         )
 
     def test_printing_bool(self):
-        self.assertEqual(parameter_overview._default_table_value_formatter(True), "True")
-        self.assertEqual(parameter_overview._default_table_value_formatter(False), "False")
+        self.assertEqual(
+            parameter_overview._default_table_value_formatter(True), "True"
+        )
+        self.assertEqual(
+            parameter_overview._default_table_value_formatter(False), "False"
+        )
 
 
 if __name__ == "__main__":

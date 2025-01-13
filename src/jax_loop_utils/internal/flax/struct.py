@@ -25,7 +25,9 @@ _T = TypeVar("_T")
 
 
 def field(pytree_node=True, *, metadata=None, **kwargs):
-    return dataclasses.field(metadata=(metadata or {}) | {"pytree_node": pytree_node}, **kwargs)
+    return dataclasses.field(
+        metadata=(metadata or {}) | {"pytree_node": pytree_node}, **kwargs
+    )
 
 
 @dataclass_transform(field_specifiers=(field,))  # type: ignore[literal-required]

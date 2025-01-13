@@ -104,19 +104,27 @@ class MetricWriterTest(parameterized.TestCase):
         num_buckets = 4
         sample_rate = 10
         scalar_metrics = {
-            "loss": jax_loop_utils.metrics.Average.from_model_output(jnp.asarray([1, 2, 3])),
-            "accuracy": jax_loop_utils.metrics.LastValue.from_model_output(jnp.asarray([5])),
+            "loss": jax_loop_utils.metrics.Average.from_model_output(
+                jnp.asarray([1, 2, 3])
+            ),
+            "accuracy": jax_loop_utils.metrics.LastValue.from_model_output(
+                jnp.asarray([5])
+            ),
         }
         image_metrics = {
             "image": ImageMetric(jnp.asarray([[4, 5], [1, 2]])),
         }
         histogram_metrics = {
             "hist": HistogramMetric(value=jnp.asarray([7, 8]), num_buckets=num_buckets),
-            "hist2": HistogramMetric(value=jnp.asarray([9, 10]), num_buckets=num_buckets),
+            "hist2": HistogramMetric(
+                value=jnp.asarray([9, 10]), num_buckets=num_buckets
+            ),
         }
         audio_metrics = {
             "audio": AudioMetric(value=jnp.asarray([1, 5]), sample_rate=sample_rate),
-            "audio2": AudioMetric(value=jnp.asarray([1, 5]), sample_rate=sample_rate + 2),
+            "audio2": AudioMetric(
+                value=jnp.asarray([1, 5]), sample_rate=sample_rate + 2
+            ),
         }
         text_metrics = {
             "text": TextMetric(value="hello"),
@@ -135,7 +143,9 @@ class MetricWriterTest(parameterized.TestCase):
         metrics = {k: m.compute_value() for k, m in metrics.items()}
         utils.write_values(writer, step, metrics)
 
-        writer.write_scalars.assert_called_once_with(step, {k: m.compute() for k, m in scalar_metrics.items()})
+        writer.write_scalars.assert_called_once_with(
+            step, {k: m.compute() for k, m in scalar_metrics.items()}
+        )
         writer.write_images.assert_called_once_with(step, _to_summary(image_metrics))
         writer.write_histograms.assert_called_once_with(
             step,

@@ -36,12 +36,22 @@ def encode_video(video_array: Array, destination: io.IOBase):
             f"Got shape {video_array.shape} with dtype {video_array.dtype}."
         )
 
-    if np.issubdtype(video_array.dtype, np.floating) and np.all(video_array >= 0) and np.all(video_array <= 1.0):
+    if (
+        np.issubdtype(video_array.dtype, np.floating)
+        and np.all(video_array >= 0)
+        and np.all(video_array <= 1.0)
+    ):
         video_array = (video_array * 255).astype(np.uint8)
-    elif np.issubdtype(video_array.dtype, np.integer) and np.all(video_array >= 0) and np.all(video_array <= 255):
+    elif (
+        np.issubdtype(video_array.dtype, np.integer)
+        and np.all(video_array >= 0)
+        and np.all(video_array <= 255)
+    ):
         video_array = video_array.astype(np.uint8)
     else:
-        raise ValueError(f"Expected video_array to be floats in [0, 1] or ints in [0, 255], got {video_array.dtype}")
+        raise ValueError(
+            f"Expected video_array to be floats in [0, 1] or ints in [0, 255], got {video_array.dtype}"
+        )
 
     T, H, W, C = video_array.shape
     # Pad height and width to even numbers if necessary

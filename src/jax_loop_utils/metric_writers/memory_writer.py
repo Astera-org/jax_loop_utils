@@ -61,7 +61,9 @@ class MemoryWriter(MetricWriter):
         self.videos[step] = videos
 
     def write_audios(self, step: int, audios: Mapping[str, Array], *, sample_rate: int):
-        self.audios[step] = MemoryWriterAudioEntry(audios=audios, sample_rate=sample_rate)
+        self.audios[step] = MemoryWriterAudioEntry(
+            audios=audios, sample_rate=sample_rate
+        )
 
     def write_texts(self, step: int, texts: Mapping[str, str]):
         self.texts[step] = texts
@@ -72,7 +74,9 @@ class MemoryWriter(MetricWriter):
         arrays: Mapping[str, Array],
         num_buckets: Optional[Mapping[str, int]] = None,
     ):
-        self.histograms[step] = MemoryWriterHistogramEntry(arrays=arrays, num_buckets=num_buckets)
+        self.histograms[step] = MemoryWriterHistogramEntry(
+            arrays=arrays, num_buckets=num_buckets
+        )
 
     def write_hparams(self, hparams: Mapping[str, Any]):
         assert self.hparams is None, "Hyperparameters can only be set once."

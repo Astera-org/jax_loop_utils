@@ -51,7 +51,9 @@ class MlflowMetricWriterTest(absltest.TestCase):
             run = runs[0]
             for metric_key in ("a", "b"):
                 self.assertIn(metric_key, run.data.metrics)
-                self.assertEqual(run.data.metrics[metric_key], seq_of_scalars[-1][metric_key])
+                self.assertEqual(
+                    run.data.metrics[metric_key], seq_of_scalars[-1][metric_key]
+                )
             # constant defined in mlflow.entities.RunStatus
             self.assertEqual(run.info.status, "RUNNING")
             writer.close()
@@ -101,7 +103,9 @@ class MlflowMetricWriterTest(absltest.TestCase):
             artifact_paths = [artifact.path for artifact in artifacts]
             self.assertGreaterEqual(len(artifact_paths), 1)
             self.assertIn("test_text_step_0.txt", artifact_paths)
-            local_path = writer._client.download_artifacts(run.info.run_id, "test_text_step_0.txt")
+            local_path = writer._client.download_artifacts(
+                run.info.run_id, "test_text_step_0.txt"
+            )
             with open(local_path) as f:
                 content = f.read()
             self.assertEqual(content, test_text)
@@ -149,7 +153,9 @@ class MlflowMetricWriterTest(absltest.TestCase):
             artifacts_videos = writer._client.list_artifacts(run.info.run_id, "videos")
             self.assertEqual(len(artifacts_videos), 2)
             sorted_artifacts_videos = sorted(artifacts_videos, key=lambda x: x.path)
-            self.assertEqual(sorted_artifacts_videos[0].path, "videos/noise_1_000000000.mp4")
+            self.assertEqual(
+                sorted_artifacts_videos[0].path, "videos/noise_1_000000000.mp4"
+            )
             self.assertFalse(sorted_artifacts_videos[0].is_dir)
 
             artifacts_zzz = writer._client.list_artifacts(run.info.run_id, "videos/zzz")
@@ -163,7 +169,9 @@ class MlflowMetricWriterTest(absltest.TestCase):
             experiment_name = "experiment_name"
             writer = MlflowMetricWriter(experiment_name, tracking_uri=tracking_uri)
             writer.write_audios(0, {"audio": np.zeros((2, 1000))}, sample_rate=16000)
-            writer.write_histograms(0, {"histogram": np.zeros((10,))}, num_buckets={"histogram": 10})
+            writer.write_histograms(
+                0, {"histogram": np.zeros((10,))}, num_buckets={"histogram": 10}
+            )
             writer.close()
             runs = _get_runs(tracking_uri, experiment_name)
             self.assertEqual(len(runs), 1)

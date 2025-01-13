@@ -181,7 +181,9 @@ class ReportProgress(PeriodicAction):
         on_steps = set(on_steps or [])
         if num_train_steps is not None:
             on_steps.add(num_train_steps)
-        super().__init__(every_steps=every_steps, every_secs=every_secs, on_steps=on_steps)
+        super().__init__(
+            every_steps=every_steps, every_secs=every_secs, on_steps=on_steps
+        )
         # Check for negative values, e.g. tf.data.UNKNOWN/INFINITE_CARDINALTY.
         if num_train_steps is not None and num_train_steps < 0:
             num_train_steps = None
@@ -211,7 +213,10 @@ class ReportProgress(PeriodicAction):
             total = time.monotonic() - self._t0
             message += " ({} : {})".format(
                 _format_secs(total),
-                ", ".join(f"{100 * dt / total:.1f}% {name}" for name, dt in sorted(self._time_per_part.items())),
+                ", ".join(
+                    f"{100 * dt / total:.1f}% {name}"
+                    for name, dt in sorted(self._time_per_part.items())
+                ),
             )
         # This should be relatively cheap so we can do it in the same main thread.
         platform.work_unit().set_notes(message)
@@ -272,13 +277,17 @@ class ReportProgress(PeriodicAction):
             barrier.block_until_ready()
             return time.monotonic()
 
-        def stop_measurement(start_future: concurrent.futures.Future[float], barrier: jax.Array):
+        def stop_measurement(
+            start_future: concurrent.futures.Future[float], barrier: jax.Array
+        ):
             barrier.block_until_ready()
             self._time_per_part[name] += time.monotonic() - start_future.result()
 
         # Call _squareit on this thread so that it is guaranteed to be dispatched
         # to the TPU before any computations inside `yield`.
-        start_future = self._executor.submit(start_measurement, barrier=_squareit(jnp.array(0.0)))
+        start_future = self._executor.submit(
+            start_measurement, barrier=_squareit(jnp.array(0.0))
+        )
         yield
 
         # Same pattern: _squareit is dispatched after any programs dispatched from
@@ -324,8 +333,12 @@ class Profile(PeriodicAction):
           artifact_name: Name of the artifact to record.
         """
         if not num_profile_steps and not profile_duration_ms:
-            raise ValueError("Must specify num_profile_steps and/or profile_duration_ms.")
-        super().__init__(every_steps=every_steps, every_secs=every_secs, on_steps=on_steps)
+            raise ValueError(
+                "Must specify num_profile_steps and/or profile_duration_ms."
+            )
+        super().__init__(
+            every_steps=every_steps, every_secs=every_secs, on_steps=on_steps
+        )
         self._num_profile_steps = num_profile_steps
         self._first_profile = first_profile
         self._profile_duration_ms = profile_duration_ms
@@ -338,8 +351,13 @@ class Profile(PeriodicAction):
         if self._session_running:
             # If a session is running we only check if we should stop it.
             dt = t - self._session_started
-            cond = not self._profile_duration_ms or dt * 1e3 >= self._profile_duration_ms
-            cond &= not self._num_profile_steps or step >= self._previous_step + self._num_profile_steps
+            cond = (
+                not self._profile_duration_ms or dt * 1e3 >= self._profile_duration_ms
+            )
+            cond &= (
+                not self._num_profile_steps
+                or step >= self._previous_step + self._num_profile_steps
+            )
             if cond:
                 self._end_session(profiler.stop())
                 return False
@@ -394,7 +412,9 @@ class ProfileAllHosts(PeriodicAction):
           every_secs: See `PeriodicAction.__init__()`.
           on_steps: See `PeriodicAction.__init__()`.
         """
-        super().__init__(every_steps=every_steps, every_secs=every_secs, on_steps=on_steps)
+        super().__init__(
+            every_steps=every_steps, every_secs=every_secs, on_steps=on_steps
+        )
         self._hosts = hosts
         self._first_profile = first_profile
         self._profile_duration_ms = profile_duration_ms
@@ -448,11 +468,15 @@ class PeriodicCallback(PeriodicAction):
           execute_async: if True wraps the callback into an async call.
           pass_step_and_time: if True the step and t are passed to the callback.
         """
-        super().__init__(every_steps=every_steps, every_secs=every_secs, on_steps=on_steps)
+        super().__init__(
+            every_steps=every_steps, every_secs=every_secs, on_steps=on_steps
+        )
         self._cb_results = collections.deque(maxlen=1)
         self.pass_step_and_time = pass_step_and_time
         if execute_async:
-            logging.info("Callback will be executed asynchronously. Errors are raised when they become available.")
+            logging.info(
+                "Callback will be executed asynchronously. Errors are raised when they become available."
+            )
             self._cb_fn = asynclib.Pool(callback_fn.__name__)(callback_fn)
         else:
             self._cb_fn = callback_fn

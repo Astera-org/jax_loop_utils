@@ -36,7 +36,10 @@ class LoggingWriter(interface.MetricWriter):
             self._collection_str = ""
 
     def write_scalars(self, step: int, scalars: Mapping[str, Scalar]):
-        values = [f"{k}={v:.6g}" if isinstance(v, float) else f"{k}={v}" for k, v in sorted(scalars.items())]
+        values = [
+            f"{k}={v:.6g}" if isinstance(v, float) else f"{k}={v}"
+            for k, v in sorted(scalars.items())
+        ]
         logging.info("[%d]%s %s", step, self._collection_str, ", ".join(values))
 
     def write_images(self, step: int, images: Mapping[str, Array]):
@@ -74,7 +77,9 @@ class LoggingWriter(interface.MetricWriter):
     ):
         num_buckets = num_buckets or {}
         for key, value in arrays.items():
-            histo, bins = _compute_histogram_as_tf(np.asarray(value), num_buckets=num_buckets.get(key))
+            histo, bins = _compute_histogram_as_tf(
+                np.asarray(value), num_buckets=num_buckets.get(key)
+            )
             if histo is not None:
                 assert bins is not None
                 logging.info(
@@ -131,7 +136,9 @@ def _compute_histogram_as_tf(
         histo = np.asarray([array.size], dtype=np.int64)
         bins = np.asarray([range_max - 0.5, range_max + 0.5], dtype=np.float64)
     else:
-        histo, bins = np.histogram(array, bins=num_buckets, range=(range_min, range_max))
+        histo, bins = np.histogram(
+            array, bins=num_buckets, range=(range_min, range_max)
+        )
         bins = np.asarray(bins, dtype=np.float64)
 
     return histo, bins
@@ -139,7 +146,10 @@ def _compute_histogram_as_tf(
 
 def _get_histogram_as_string(histo: np.ndarray, bins: np.ndarray):
     # First items are right-open (i.e. [a, b)).
-    items = [f"[{bins[i]:.3g}, {bins[i + 1]:.3g}): {count}" for i, count in enumerate(histo[:-1])]
+    items = [
+        f"[{bins[i]:.3g}, {bins[i + 1]:.3g}): {count}"
+        for i, count in enumerate(histo[:-1])
+    ]
     # Last item is right-closed (i.e. [a, b]).
     items.append(f"[{bins[-2]:.3g}, {bins[-1]:.3g}]: {histo[-1]}")
     return ", ".join(items)

@@ -37,7 +37,9 @@ def log_activity(activity_name: str):
         dt = time.time() - t0
         exc, *_ = sys.exc_info()
         if exc is not None:
-            logging.exception("%s FAILED after %.2fs with %s.", activity_name, dt, exc.__name__)
+            logging.exception(
+                "%s FAILED after %.2fs with %s.", activity_name, dt, exc.__name__
+            )
         else:
             logging.info("%s finished after %.2fs.", activity_name, dt)
 
@@ -74,7 +76,9 @@ def check_param(value, *, ndim=None, dtype=jnp.float32):
         raise ValueError(f"Expected dtype={dtype}, got dtype={value.dtype}")
 
 
-def flatten_dict(d: Mapping[str, Any], prefix: tuple[str, ...] = ()) -> list[tuple[str, Union[int, float, str]]]:
+def flatten_dict(
+    d: Mapping[str, Any], prefix: tuple[str, ...] = ()
+) -> list[tuple[str, Union[int, float, str]]]:
     """Returns a sequence of flattened (k, v) pairs for tfsummary.hparams().
 
     Args:
@@ -91,7 +95,9 @@ def flatten_dict(d: Mapping[str, Any], prefix: tuple[str, ...] = ()) -> list[tup
         if isinstance(v, Mapping) or hasattr(v, "items"):
             ret += flatten_dict(v, prefix + (k,))
         elif isinstance(v, list | tuple):
-            ret += flatten_dict({str(idx): value for idx, value in enumerate(v)}, prefix + (k,))
+            ret += flatten_dict(
+                {str(idx): value for idx, value in enumerate(v)}, prefix + (k,)
+            )
         else:
             ret.append((".".join(prefix + (k,)), v if v is not None else ""))
     return ret
