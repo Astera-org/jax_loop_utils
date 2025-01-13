@@ -72,6 +72,9 @@ filterwarnings = [
     "error",
 ]
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
 select = [
     "A",   # flake8-builtins

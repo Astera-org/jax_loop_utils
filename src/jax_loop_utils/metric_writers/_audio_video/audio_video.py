@@ -50,7 +50,8 @@ def encode_video(video_array: Array, destination: io.IOBase):
         video_array = video_array.astype(np.uint8)
     else:
         raise ValueError(
-            f"Expected video_array to be floats in [0, 1] or ints in [0, 255], got {video_array.dtype}"
+            "Expected video_array to be floats in [0, 1] "
+            f"or ints in [0, 255], got {video_array.dtype}"
         )
 
     T, H, W, C = video_array.shape

@@ -37,9 +37,7 @@ def log_activity(activity_name: str):
         dt = time.time() - t0
         exc, *_ = sys.exc_info()
         if exc is not None:
-            logging.exception(
-                "%s FAILED after %.2fs with %s.", activity_name, dt, exc.__name__
-            )
+            logging.exception("%s FAILED after %.2fs with %s.", activity_name, dt, exc.__name__)
         else:
             logging.info("%s finished after %.2fs.", activity_name, dt)
 
@@ -95,9 +93,7 @@ def flatten_dict(
         if isinstance(v, Mapping) or hasattr(v, "items"):
             ret += flatten_dict(v, prefix + (k,))
         elif isinstance(v, list | tuple):
-            ret += flatten_dict(
-                {str(idx): value for idx, value in enumerate(v)}, prefix + (k,)
-            )
+            ret += flatten_dict({str(idx): value for idx, value in enumerate(v)}, prefix + (k,))
         else:
             ret.append((".".join(prefix + (k,)), v if v is not None else ""))
     return ret
